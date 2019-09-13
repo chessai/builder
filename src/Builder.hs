@@ -16,23 +16,23 @@ module Builder
   , build
 
     -- * Construction
-  , buildUnaligned
-  , buildWord8
-  , buildWord16
-  , buildWord32
-  , buildWord64
-  , buildWord
-  , buildInt8
-  , buildInt16
-  , buildInt32
-  , buildInt64
-  , buildInt
-  , buildFloat
-  , buildDouble
-  , buildChar
-  , buildPtr
-  , buildByteArray
-  , buildFixed
+  , unaligned
+  , word8
+  , word16
+  , word32
+  , word64
+  , word
+  , int8
+  , int16
+  , int32
+  , int64
+  , int
+  , float
+  , double
+  , char
+  , ptr
+  , bytearray
+  , fixed
   ) where
 
 import Data.Primitive hiding (writeByteArray)
@@ -108,95 +108,95 @@ writeByteArray (ByteArray src#) (I# off#) (I# len#)
 {-# inline writeByteArray #-}
 
 -- | A 'Builder' for any 'Prim' and 'PrimUnaligned' value.
-buildUnaligned :: (Prim a, PrimUnaligned a)
+unaligned :: (Prim a, PrimUnaligned a)
   => a
   -> Builder
-buildUnaligned a = Builder (sizeOf# a) (writeUnaligned a)
-{-# inline buildUnaligned #-}
+unaligned a = Builder (sizeOf# a) (writeUnaligned a)
+{-# inline unaligned #-}
 
 -- | A 'Builder' for 'Word8'.
-buildWord8 :: Word8 -> Builder
-buildWord8 = buildUnaligned
-{-# inline buildWord8 #-}
+word8 :: Word8 -> Builder
+word8 = unaligned
+{-# inline word8 #-}
 
 -- | A 'Builder' for 'Word16'.
-buildWord16 :: Word16 -> Builder
-buildWord16 = buildUnaligned
-{-# inline buildWord16 #-}
+word16 :: Word16 -> Builder
+word16 = unaligned
+{-# inline word16 #-}
 
 -- | A 'Builder' for 'Word32'.
-buildWord32 :: Word32 -> Builder
-buildWord32 = buildUnaligned
-{-# inline buildWord32 #-}
+word32 :: Word32 -> Builder
+word32 = unaligned
+{-# inline word32 #-}
 
 -- | A 'Builder' for 'Word64'.
-buildWord64 :: Word64 -> Builder
-buildWord64 = buildUnaligned
-{-# inline buildWord64 #-}
+word64 :: Word64 -> Builder
+word64 = unaligned
+{-# inline word64 #-}
 
 -- | A 'Builder' for 'Word'.
-buildWord :: Word -> Builder
-buildWord = buildUnaligned
-{-# inline buildWord #-}
+word :: Word -> Builder
+word = unaligned
+{-# inline word #-}
 
 -- | A 'Builder' for 'Int8'.
-buildInt8 :: Int8 -> Builder
-buildInt8 = buildUnaligned
-{-# inline buildInt8 #-}
+int8 :: Int8 -> Builder
+int8 = unaligned
+{-# inline int8 #-}
 
 -- | A 'Builder' for 'Int16'.
-buildInt16 :: Int16 -> Builder
-buildInt16 = buildUnaligned
-{-# inline buildInt16 #-}
+int16 :: Int16 -> Builder
+int16 = unaligned
+{-# inline int16 #-}
 
 -- | A 'Builder' for 'Int32'.
-buildInt32 :: Int32 -> Builder
-buildInt32 = buildUnaligned
-{-# inline buildInt32 #-}
+int32 :: Int32 -> Builder
+int32 = unaligned
+{-# inline int32 #-}
 
 -- | A 'Builder' for 'Int64'.
-buildInt64 :: Int64 -> Builder
-buildInt64 = buildUnaligned
-{-# inline buildInt64 #-}
+int64 :: Int64 -> Builder
+int64 = unaligned
+{-# inline int64 #-}
 
 -- | A 'Builder' for 'Int'.
-buildInt :: Int -> Builder
-buildInt = buildUnaligned
-{-# inline buildInt #-}
+int :: Int -> Builder
+int = unaligned
+{-# inline int #-}
 
 -- | A 'Builder' for 'Char'.
-buildChar :: Char -> Builder
-buildChar = buildUnaligned
-{-# inline buildChar #-}
+char :: Char -> Builder
+char = unaligned
+{-# inline char #-}
 
 -- | A 'Builder' for a 'ByteArray' slice.
-buildByteArray :: ()
+bytearray :: ()
   => ByteArray -- ^ source array
   -> Int -- ^ offset into source array
   -> Int -- ^ number of bytes to copy
   -> Builder
-buildByteArray b o n@(I# n#) = Builder n# (writeByteArray b o n)
-{-# inline buildByteArray #-}
+bytearray b o n@(I# n#) = Builder n# (writeByteArray b o n)
+{-# inline bytearray #-}
 
 -- | A 'Builder' for 'Float'.
-buildFloat :: Float -> Builder
-buildFloat = buildUnaligned
-{-# inline buildFloat #-}
+float :: Float -> Builder
+float = unaligned
+{-# inline float #-}
 
 -- | A 'Builder' for 'Double'.
-buildDouble :: Double -> Builder
-buildDouble = buildUnaligned
-{-# inline buildDouble #-}
+double :: Double -> Builder
+double = unaligned
+{-# inline double #-}
 
 -- | A 'Builder' for @'Ptr' a@.
-buildPtr :: Ptr a -> Builder
-buildPtr = buildUnaligned
-{-# inline buildPtr #-}
+ptr :: Ptr a -> Builder
+ptr = unaligned
+{-# inline ptr #-}
 
 -- | A 'Builder' for @'Fixed' b a@
 --   This provides better control over endianness when writing.
-buildFixed :: (FixedOrdering b, Bytes a, Prim a, PrimUnaligned a)
+fixed :: (FixedOrdering b, Bytes a, Prim a, PrimUnaligned a)
   => Fixed b a
   -> Builder
-buildFixed = buildUnaligned
-{-# inline buildFixed #-}
+fixed = unaligned
+{-# inline fixed #-}
