@@ -2,7 +2,7 @@ cabal-version: 2.2
 name:
   builder
 version:
-  0.1
+  0.2
 synopsis:
   bounded ByteArray builder type
 description:
