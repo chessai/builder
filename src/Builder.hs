@@ -42,50 +42,41 @@ import Data.Word
 import GHC.Exts hiding (build)
 import System.ByteOrder
 
-newtype Writer s = W
-  { _w :: ()
-      => MutableByteArray# s
-      -- buffer
-      -> Int#
-      -- offset into buffer
-      -> (State# s -> (# State# s, Int# #))
-      -- update to offset
-  }
-
-instance Semigroup (Writer s) where
-  W x <> W y = W $ \marr# ix0# s0# -> case x marr# ix0# s0# of
-    (# s1#, ix1# #) -> y marr# ix1# s1#
-  {-# inline (<>) #-}
-
-instance Monoid (Writer s) where
-  mempty = W $ \_ ix0# s0# -> (# s0#, ix0# #)
-  {-# inline mempty #-}
-
-data BI s = BI !Int !(Writer s)
-
-instance Semigroup (BI s) where
-  BI len0 w0 <> BI len1 w1 = BI (len0 + len1) (w0 <> w1)
-  {-# inline (<>) #-}
-
-instance Monoid (BI s) where
-  mempty = BI 0 mempty
-  {-# inline mempty #-}
-
 -- | A 'Builder' for 'ByteArray's that has O(1) append.
 --   To create a 'ByteArray', use 'build'. This will only
 --   do one allocation.
-newtype Builder = Builder (forall s. BI s)
+data Builder = Builder
+  { size   :: Int#
+  , writer :: forall s. ()
+      => MutableByteArray# s
+      -> Int#
+      -> (State# s -> (# State# s, Int# #))
+  }
 
 instance Semigroup Builder where
-  Builder b0 <> Builder b1 = Builder (b0 <> b1)
-  {-# inline (<>) #-}
+  Builder len0 w0 <> Builder len1 w1 = Builder
+    { size   = len0 +# len1
+    , writer = \marr# ix0# s0# ->
+        case w0 marr# ix0# s0# of
+          (# s1#, ix1# #) -> w1 marr# ix1# s1#
+    }
 
 instance Monoid Builder where
-  mempty = Builder mempty
-  {-# inline mempty #-}
+  mempty = Builder
+    { size   = 0#
+    , writer = \_ ix0# s0# -> (# s0#, ix0# #)
+    }
 
-runWriter# :: Int# -> Writer s -> State# s -> (# State# s, ByteArray# #)
-runWriter# sz# (W g) = \s0# -> case newByteArray# sz# s0# of
+type Writer# s = MutableByteArray# s
+  -> Int#
+  -> (State# s -> (# State# s, Int# #))
+
+runWriter# :: ()
+  => Int#
+  -> Writer# s
+  -> State# s
+  -> (# State# s, ByteArray# #)
+runWriter# sz# g = \s0# -> case newByteArray# sz# s0# of
   (# s1#, marr# #) -> case g marr# 0# s1# of
     (# s2#, _ #) -> case unsafeFreezeByteArray# marr# s2# of
       (# s3#, b# #) -> (# s3#, b# #)
@@ -93,14 +84,14 @@ runWriter# sz# (W g) = \s0# -> case newByteArray# sz# s0# of
 
 -- | Convert a 'Builder' into a 'ByteArray'.
 build :: Builder -> ByteArray
-build (Builder (BI (I# len#) w)) = case runRW# (runWriter# len# w) of
+build (Builder len# w) = case runRW# (runWriter# len# w) of
   (# _, b# #) -> ByteArray b#
 {-# inline build #-}
 
 writeUnaligned :: (Prim a, PrimUnaligned a)
   => a
-  -> Writer s
-writeUnaligned a = W $ \marr# ix0# s0# ->
+  -> Writer# s
+writeUnaligned a = \marr# ix0# s0# ->
   case writeUnalignedByteArray# marr# ix0# a s0# of
     s1# -> (# s1#, ix0# +# alignment# a #)
 {-# inline writeUnaligned #-}
@@ -109,9 +100,9 @@ writeByteArray :: ()
   => ByteArray
   -> Int
   -> Int
-  -> Writer s
+  -> Writer# s
 writeByteArray (ByteArray src#) (I# off#) (I# len#)
-  = W $ \marr# ix0# s0# ->
+  = \marr# ix0# s0# ->
       case copyByteArray# src# off# marr# ix0# len# s0# of
         s1# -> (# s1#, ix0# +# len# #)
 {-# inline writeByteArray #-}
@@ -120,7 +111,7 @@ writeByteArray (ByteArray src#) (I# off#) (I# len#)
 buildUnaligned :: (Prim a, PrimUnaligned a)
   => a
   -> Builder
-buildUnaligned a = Builder (BI (sizeOf a) (writeUnaligned a))
+buildUnaligned a = Builder (sizeOf# a) (writeUnaligned a)
 {-# inline buildUnaligned #-}
 
 -- | A 'Builder' for 'Word8'.
@@ -184,7 +175,7 @@ buildByteArray :: ()
   -> Int -- ^ offset into source array
   -> Int -- ^ number of bytes to copy
   -> Builder
-buildByteArray b o n = Builder (BI n (writeByteArray b o n))
+buildByteArray b o n@(I# n#) = Builder n# (writeByteArray b o n)
 {-# inline buildByteArray #-}
 
 -- | A 'Builder' for 'Float'.
