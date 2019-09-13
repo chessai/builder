@@ -4,9 +4,11 @@ name:
 version:
   0.1
 synopsis:
-  See README for more info
+  bounded ByteArray builder type
 description:
-  See README for more info
+  A Builder type for ByteArray. Appending these builders
+  can be cheaper than when appending ByteArray values, since
+  only one buffer allocation is performed.
 homepage:
   https://github.com/chessai/builder
 bug-reports:
